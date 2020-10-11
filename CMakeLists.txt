@@ -7,6 +7,10 @@ SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})
 include("macro.cmake")
 set(CMAKE_CXX_STANDARD 11)
 
+if(DEFINED HALIDE_DISTRIB_DIR)
+  list(APPEND CMAKE_PREFIX_PATH ${HALIDE_DISTRIB_DIR})
+endif(DEFINED HALIDE_DISTRIB_DIR)
+
 # Define dependencies
 find_package(Halide REQUIRED)
 link_libtiff()
