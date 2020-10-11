@@ -7,12 +7,19 @@ SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})
 include("macro.cmake")
 set(CMAKE_CXX_STANDARD 11)
 
+# Define dependencies
+# If Halide notm system-wide installation
 if(DEFINED HALIDE_DISTRIB_DIR)
   list(APPEND CMAKE_PREFIX_PATH ${HALIDE_DISTRIB_DIR})
 endif(DEFINED HALIDE_DISTRIB_DIR)
 
-# Define dependencies
 find_package(Halide REQUIRED)
+
+if(DEFINED HALIDE_DISTRIB_DIR)
+  # find_library(Halide REQUIRED)
+  link_directories(BEFORE "${HALIDE_DISTRIB_DIR}/lib")
+endif(DEFINED HALIDE_DISTRIB_DIR)
+
 link_libtiff()
 
 find_package(ZLIB REQUIRED)
