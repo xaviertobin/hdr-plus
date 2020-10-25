@@ -15,8 +15,8 @@ jobs:
       CXX: ${{matrix.cxx}}
       LD: ${{matrix.ld}}
       THIRDPARTY_DIR: ${{github.workspace}}/3rdparty
-      HALIDE_BUILD_DIR: ${{github.workspace}}/3rdparty/Halide-master/build
-      HALIDE_INSTALL_DIR: ${{github.workspace}}/3rdparty/Halide-master/install
+      HALIDE_BUILD_DIR: ${{github.workspace}}/3rdparty/Halide-10.0.0/build
+      HALIDE_INSTALL_DIR: ${{github.workspace}}/3rdparty/Halide-10.0.0/install
     strategy:
       matrix:
         target_arch: [x86, arm]
@@ -35,15 +35,15 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt install clang-9 llvm-9
+          sudo apt install llvm-9 clang-9 libclang-9-dev
           sudo apt remove llvm-8 llvm-6.0
       - uses: actions/checkout@v1
 
       - name: Download Halide
         run: |
           mkdir -p ${THIRDPARTY_DIR} && cd ${THIRDPARTY_DIR}
-          wget https://github.com/halide/Halide/archive/master.zip
-          unzip -o master.zip
+          wget https://github.com/halide/Halide/archive/v10.0.0.zip
+          unzip -o v10.0.0.zip
       - name: Build Halide-${{matrix.target_os}}-${{matrix.target_arch}}-${{matrix.target_bits}}
         working-directory: ${{ github.workspace }}/3rdparty
         run: |
@@ -57,7 +57,7 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: halide-install
-          path: ${{ github.workspace }}/3rdparty/Halide-master/install/
+          path: ${{ github.workspace }}/3rdparty/Halide-10.0.0/install/
 
   build_all:
     needs: build_halide
@@ -70,8 +70,6 @@ jobs:
       CXX: ${{matrix.cxx}}
       LD: ${{matrix.ld}}
       THIRDPARTY_DIR: ${{github.workspace}}/3rdparty
-      HALIDE_BUILD_DIR: ${{github.workspace}}/3rdparty/Halide-master/build
-      HALIDE_INSTALL_DIR: ${{github.workspace}}/3rdparty/Halide-master/install
     strategy:
       matrix:
         target_arch: [x86, arm]
