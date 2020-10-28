@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <unordered_map>
+#include <array>
 
 #include "LibRaw2DngConverter.h"
 
@@ -44,13 +45,17 @@ void RawImage::CopyToBuffer(Halide::Runtime::Buffer<uint16_t> &buffer) const {
     const auto raw_height = RawProcessor->imgdata.rawdata.sizes.raw_height;
     const auto top = RawProcessor->imgdata.rawdata.sizes.top_margin;
     const auto left = RawProcessor->imgdata.rawdata.sizes.left_margin;
+    // 3 size buffer is for data, width, height
+    // 3 size buffer is for data, width, height
+    // 3 size buffer is for data, width, height
+    // 3 size buffer is for data, width, height
     Halide::Runtime::Buffer<uint16_t> raw_buffer(image_data, raw_width, raw_height);
     buffer.copy_from(raw_buffer.translated({-left, -top}));
 }
 
-void RawImage::WriteDng(const std::string &output_path, const Halide::Runtime::Buffer<uint16_t> &buffer) const
+void RawImage::WriteDng(const std::string &output_path, const std::string &input_file, const Halide::Runtime::Buffer<uint16_t> &buffer) const
 {
-    LibRaw2DngConverter converter(*this);
+    LibRaw2DngConverter converter(*this, input_file);
     converter.SetBuffer(buffer);
     converter.Write(output_path);
 }

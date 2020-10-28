@@ -2,11 +2,14 @@
 #define HDRPLUS_FINISH_H_
 
 #include "Halide.h"
+
+using namespace Halide;
+using namespace Halide::ConciseCasts;
      
 template <class T = float>
 struct TypedWhiteBalance {
     template<class TT>
-    explicit TypedWhiteBalance(const TypedWhiteBalance<TT>& other)
+     TypedWhiteBalance(const TypedWhiteBalance<TT>& other)
         : r(other.r)
         , g0(other.g0)
         , g1(other.g1)
@@ -28,6 +31,34 @@ struct TypedWhiteBalance {
 
 using WhiteBalance = TypedWhiteBalance<float>;
 using CompiletimeWhiteBalance = TypedWhiteBalance<Halide::Expr>;
+
+
+template <class T = float>
+struct TypedWhiteBalance2 {
+    template<class TT>
+     TypedWhiteBalance2(const TypedWhiteBalance2<TT>& other)
+        : r(other.r)
+        , g0(other.g0)
+        , g1(other.g1)
+        , b(other.b)
+    {}
+
+    TypedWhiteBalance2(T r, T g0, T g1, T b)
+        : r(r)
+        , g0(g0)
+        , g1(g1)
+        , b(b)
+    {}
+    
+    T r;
+    T g0;
+    T g1;
+    T b;
+};
+
+using WhiteBalance2 = TypedWhiteBalance2<float>;
+using CompiletimeWhiteBalance2 = TypedWhiteBalance2<Halide::Expr>;
+
 
 typedef uint16_t BlackPoint;
 typedef uint16_t WhitePoint;
@@ -53,5 +84,8 @@ enum class CfaPattern : int {
  */
 Halide::Func finish(Halide::Func input, int width, int height, BlackPoint bp, WhitePoint wp, const WhiteBalance &wb, CfaPattern cfa, Halide::Func ccm, Compression c, Gain g);
 Halide::Func finish(Halide::Func input, Halide::Expr width, Halide::Expr height, Halide::Expr bp, Halide::Expr wp, const CompiletimeWhiteBalance &wb, Halide::Expr cfa_pattern, Halide::Func ccm, Halide::Expr c, Halide::Expr g);
+
+Halide::Func touchup(Halide::Func input, int width, int height, BlackPoint bp, WhitePoint wp, const WhiteBalance2 &wb, CfaPattern cfa, Halide::Func ccm, Compression c, Gain g);
+Halide::Func touchup(Halide::Func input, Halide::Expr width, Halide::Expr height, Halide::Expr bp, Halide::Expr wp, const CompiletimeWhiteBalance2 &wb, Halide::Expr cfa_pattern, Halide::Func ccm, Halide::Expr c, Halide::Expr g);
 
 #endif

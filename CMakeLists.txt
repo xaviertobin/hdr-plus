@@ -53,7 +53,7 @@ add_halide_library(hdrplus_pipeline
     # EXTRA_OUTPUTS "stmt;html;schedule") # uncomment for extra output
 )
 
-add_executable(align_and_merge_generator src/align_and_merge_generator.cpp src/align.cpp src/merge.cpp src/util.cpp)
+add_executable(align_and_merge_generator src/align_and_merge_generator.cpp src/align.cpp src/merge.cpp src/finish.cpp src/util.cpp)
 target_link_libraries(align_and_merge_generator PRIVATE Halide::Generator)
 add_halide_library(align_and_merge
     FROM align_and_merge_generator
@@ -66,8 +66,8 @@ add_halide_library(align_and_merge
 
 add_executable(hdrplus bin/HDRPlus.cpp ${src_files})
 add_dependencies(hdrplus hdrplus_pipeline)
-target_link_libraries(hdrplus hdrplus_pipeline Halide png ${LIBRAW_LIBRARY} ${TIFF_LIBRARIES} ${TIFFXX_LIBRARY})
+target_link_libraries(hdrplus hdrplus_pipeline align_and_merge Halide ${PNG_LIBRARIES} ${LIBRAW_LIBRARY} ${TIFF_LIBRARIES} ${TIFFXX_LIBRARY})
 
 add_executable(stack_frames bin/stack_frames.cpp ${src_files})
 add_dependencies(stack_frames align_and_merge)
-target_link_libraries(stack_frames Halide align_and_merge ${LIBRAW_LIBRARY} ${PNG_LIBRARIES} ${JPEG_LIBRARIES} ${TIFF_LIBRARIES} ${TIFFXX_LIBRARY})
+target_link_libraries(stack_frames Halide hdrplus_pipeline align_and_merge ${LIBRAW_LIBRARY} ${PNG_LIBRARIES} ${JPEG_LIBRARIES} ${TIFF_LIBRARIES} ${TIFFXX_LIBRARY})

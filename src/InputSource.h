@@ -33,7 +33,7 @@ public:
     void CopyToBuffer(Halide::Runtime::Buffer<uint16_t>& buffer) const;
 
     // Writes current RawImage as DNG. If buffer was provided, then use it instead of internal buffer.
-    void WriteDng(const std::string& path, const Halide::Runtime::Buffer<uint16_t>& buffer = {}) const;
+    void WriteDng(const std::string& path, const std::string &input_file, const Halide::Runtime::Buffer<uint16_t>& buffer = {}) const;
 
     std::shared_ptr<LibRaw> GetRawProcessor() const { return RawProcessor; }
 private:

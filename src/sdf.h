@@ -21,6 +21,6 @@ public:
 private:
     std::ostringstream OutputStream;
     const RawImage& Raw;
-        const std::string input_file;
+    const std::string input_file;
     std::shared_ptr<TIFF> Tiff;
 };

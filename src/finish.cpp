@@ -24,6 +24,23 @@ Func black_white_level(Func input, const Expr bp, const Expr wp) {
     return output;
 }
 
+
+/*
+ * black_white_level -- Renormalizes an image based on input black and white
+ * levels to take advantage of the full 16-bit integer depth. This is a
+ * necessary step for camera white balance levels to be valid.
+ */
+Func make_grey(Func input) {
+
+    Func output("make_grey");
+
+    Var x, y;
+
+    output(x, y) = input(x, y) * 4;
+
+    return output;
+}
+
 /*
  * white_balance -- Corrects white-balance of a mosaicked image based on input
  * color multipliers. Note that the two green channels in the bayer pattern
@@ -56,6 +73,37 @@ Func white_balance(Func input, Expr width, Expr height, const CompiletimeWhiteBa
 
     return output;
 }
+
+
+Func white_balance2(Func input, Expr width, Expr height, const CompiletimeWhiteBalance2 &wb) {
+
+    Func output("white_balance_output");
+
+    Var x, y;
+    RDom r(0, width / 2, 0, height / 2);
+
+    output(x, y) = u16(0);
+
+    output(r.x * 2    , r.y * 2    ) = u16_sat(wb.r  * f32(input(r.x * 2    , r.y * 2    )));   // red
+    output(r.x * 2 + 1, r.y * 2    ) = u16_sat(wb.g0 * f32(input(r.x * 2 + 1, r.y * 2    )));   // green 0
+    output(r.x * 2    , r.y * 2 + 1) = u16_sat(wb.g1 * f32(input(r.x * 2    , r.y * 2 + 1)));   // green 1
+    output(r.x * 2 + 1, r.y * 2 + 1) = u16_sat(wb.b  * f32(input(r.x * 2 + 1, r.y * 2 + 1)));   // blue
+
+    ///////////////////////////////////////////////////////////////////////////
+    // schedule
+    ///////////////////////////////////////////////////////////////////////////
+
+    output.compute_root().parallel(y).vectorize(x, 16);
+
+    output.update(0).parallel(r.y);
+    output.update(1).parallel(r.y);
+    output.update(2).parallel(r.y);
+    output.update(3).parallel(r.y);
+
+    return output;
+}
+
+
 
 /*
  * demosaic -- Interpolates color channels in the bayer mosaic based on the
@@ -282,6 +330,30 @@ Func desaturate_noise(Func input, Expr width, Expr height) {
     return output;
 }
 
+
+/*
+ * increase_saturation -- Increases magnitude of UV channels for YUV input.
+ */
+Func decrease_highlights(Func input, float strength) {
+
+    Func output("decrease_highlights_output");
+
+    Var x, y, c;
+    RDom r(0, 3);
+
+    Expr pixelValue = input(x, y, c);
+
+    output(x, y, c) = (pixelValue - ((sum(u32(input(x, y, r))) / 3) - 55535.f, 0.f)*0.16f);
+
+    ///////////////////////////////////////////////////////////////////////////
+    // schedule
+    ///////////////////////////////////////////////////////////////////////////
+
+    output.compute_root().parallel(y).vectorize(x, 16);
+
+    return output;
+}
+
 /*
  * increase_saturation -- Increases magnitude of UV channels for YUV input.
  */
@@ -302,6 +374,34 @@ Func increase_saturation(Func input, float strength) {
 
     return output;
 }
+
+
+/*
+ * chroma_denoise -- Reduces chromatic noise in an image through a combination
+ * bilateral filtering and shadow desaturation. The noise removal algorithms
+ * will be applied iteratively in order of increasing aggressiveness, with the
+ * total number of passes determined by input.
+ */
+Func saturate(Func input, Expr width, Expr height, int num_passes) {
+
+    Func output = rgb_to_yuv(input);
+
+    int pass = 0;
+
+    if (num_passes > 0) output = bilateral_filter(output, width, height);
+    pass++;
+
+    while(pass < num_passes) {
+
+        output = desaturate_noise(output, width, height);
+        pass++;
+    }
+
+    if (num_passes > 2) output = increase_saturation(output, 1.1f);
+
+    return yuv_to_rgb(output);
+}
+
 
 /*
  * chroma_denoise -- Reduces chromatic noise in an image through a combination
@@ -324,7 +424,7 @@ Func chroma_denoise(Func input, Expr width, Expr height, int num_passes) {
         pass++;
     }
 
-    if (num_passes > 2) output = increase_saturation(output, 1.1f);
+    output = increase_saturation(output, 1.25f);
 
     return yuv_to_rgb(output);
 }
@@ -469,7 +569,7 @@ Func tone_map(Func input, Expr width, Expr height, Expr comp, Expr gain) {
 
     // more passes and smaller compression and gain values produces more natural results
 
-    int num_passes = 3;
+    int num_passes = 2;
 
     // constants used to determine compression and gain values at each iteration
 
@@ -666,10 +766,10 @@ Halide::Func shift_bayer_to_rggb(Halide::Func input, const Halide::Expr cfa_patt
  * blowing out highlights. The output values are 8-bit.
  */
 Halide::Func finish(Halide::Func input, Expr width, Expr height, Expr bp, Expr wp, const CompiletimeWhiteBalance &wb, const Expr cfa_pattern, Halide::Func ccm, const Expr c, const Expr g) {
-    int denoise_passes = 1;
-    float contrast_strength = 5.f;
+    int denoise_passes = 0;
+    float contrast_strength = 5.5f;
     int black_level = 2000;
-    float sharpen_strength = 2.f;
+    float sharpen_strength = 9.f;
 
     Func bayer_shifted = shift_bayer_to_rggb(input, cfa_pattern);
     
@@ -684,33 +784,93 @@ Halide::Func finish(Halide::Func input, Expr width, Expr height, Expr bp, Expr w
 
     Func demosaic_output = demosaic(white_balance_output, width, height);
 
+    // 4. Decrease highlights
+
+    // Func decrease_highlights_output = decrease_highlights(demosaic_output, 0.f);
+
     // 4. Chroma denoising
 
-    Func chroma_denoised_output = chroma_denoise(demosaic_output, width, height, denoise_passes);
+    // Func chroma_denoised_output = chroma_denoise(demosaic_output, width, height, denoise_passes);
 
     // 5. sRGB color correction
 
-    Func srgb_output = srgb(demosaic_output, ccm);
+    // Func srgb_output = srgb(chroma_denoised_output, ccm);
 
     // 6. Tone mapping
 
-    Func tone_map_output = tone_map(srgb_output, width, height, c, g);
+    // Func tone_map_output = tone_map(demosaic_output, width, height, c, g);
 
     // 7. Gamma correction
 
-    Func gamma_correct_output = gamma_correct(tone_map_output);
+    // Func gamma_correct_output = gamma_correct(tone_map_output);
 
     // 8. Global contrast increase
 
-    Func contrast_output = contrast(gamma_correct_output, contrast_strength, black_level);
+    // Func contrast_output = contrast(gamma_correct_output, contrast_strength, black_level);
 
     // 9. Sharpening
 
-    Func sharpen_output = sharpen(contrast_output, sharpen_strength);
+    // Func sharpen_output = sharpen(contrast_output, sharpen_strength);
 
-    return u8bit_interleaved(contrast_output);
+    return u8bit_interleaved(demosaic_output);
 }
+
 
 Func finish(Func input, int width, int height, const BlackPoint bp, const WhitePoint wp, const WhiteBalance &wb, const CfaPattern cfa, Halide::Func ccm, const Compression c, const Gain g) {
     return finish(input, width, height, bp, wp, wb, cfa, ccm, c, g);
+}
+
+Halide::Func touchup(Halide::Func input, Expr width, Expr height, Expr bp, Expr wp, const CompiletimeWhiteBalance2 &wb, const Expr cfa_pattern, Halide::Func ccm, const Expr c, const Expr g) {
+    int denoise_passes = 0;
+    float contrast_strength = 5.5f;
+    int black_level = 2000;
+    float sharpen_strength = 9.f;
+
+    Func bayer_shifted = shift_bayer_to_rggb(input, cfa_pattern);
+    
+    // 1. Black-level subtraction and white-level scaling
+    Func black_white_level_output = black_white_level(bayer_shifted, bp, wp);
+
+    // // 2. White balancing
+
+    // Func white_balance_output = white_balance2(input, width, height, wb);
+
+    // // 3. Demosaicking
+
+    // Func demosaic_output = demosaic(white_balance_output, width, height);
+
+    // // 4. Decrease highlights
+
+    // // Func decrease_highlights_output = decrease_highlights(demosaic_output, 0.f);
+
+    // // 4. Chroma denoising
+
+    // // Func chroma_denoised_output = chroma_denoise(demosaic_output, width, height, denoise_passes);
+
+    // // 5. sRGB color correction
+
+    // // Func srgb_output = srgb(chroma_denoised_output, ccm);
+
+    // // 6. Tone mapping
+
+    // Func tone_map_output = tone_map(demosaic_output, width, height, c, g);
+
+    // // 7. Gamma correction
+
+    // Func gamma_correct_output = gamma_correct(tone_map_output);
+
+    // // 8. Global contrast increase
+
+    // Func contrast_output = contrast(gamma_correct_output, contrast_strength, black_level);
+
+    // // 9. Sharpening
+
+    // Func sharpen_output = sharpen(contrast_output, sharpen_strength);
+
+    return black_white_level_output;
+}
+
+
+Func touchup(Func input, int width, int height, const BlackPoint bp, const WhitePoint wp, const WhiteBalance2 &wb, const CfaPattern cfa, Halide::Func ccm, const Compression c, const Gain g) {
+    return touchup(input, width, height, bp, wp, wb, cfa, ccm, c, g);
 }
