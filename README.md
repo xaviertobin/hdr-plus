@@ -51,10 +51,14 @@ tiffdump ../data/g1.ARW
 
 //Paddy under the table
 ./hdrplus ../data png d1.dng d2.dng d3.dng d4.dng d5.dng d6.dng d7.dng
+./hdrplus ../data dng d1.dng d2.dng d3.dng d4.dng d5.dng d6.dng d7.dng
 
 //Helicopter
 ./hdrplus ../data png h1.ARW h2.ARW h3.ARW h4.ARW h5.ARW h6.ARW h7.ARW h8.ARW h9.ARW h10.ARW h11.ARW h12.ARW h13.ARW h14.ARW h15.ARW h16.ARW h17.ARW
 ./hdrplus ../data dng h1.ARW h2.ARW h3.ARW h4.ARW h5.ARW h6.ARW h7.ARW h8.ARW h9.ARW h10.ARW h11.ARW h12.ARW h13.ARW h14.ARW h15.ARW h16.ARW h17.ARW
+
+./hdrplus ../data dng hel1.ARW hel2.ARW hel3.ARW hel4.ARW hel5.ARW hel6.ARW hel7.ARW hel8.ARW hel9.ARW hel10.ARW hel11.ARW hel12.ARW hel13.ARW
+
 
 //Headphones
 ./hdrplus ../data dng hp.dng hp_1.dng hp_2.dng hp_3.dng hp_4.dng hp_5.dng hp_6.dng hp_7.dng hp_8.dng hp_9.dng hp_10.dng hp_11.dng
@@ -62,6 +66,11 @@ tiffdump ../data/g1.ARW
 
 // Pot plant
 ./hdrplus ../data png pp1.ARW pp2.ARW pp3.ARW pp4.ARW pp5.ARW pp6.ARW pp7.ARW pp8.ARW pp9.ARW 
+./hdrplus ../data dng pp1.ARW pp2.ARW pp3.ARW pp4.ARW pp5.ARW pp6.ARW pp7.ARW pp8.ARW pp9.ARW 
+
+// Low noise
+./hdrplus ../data dng sony1.ARW sony2.ARW sony3.ARW sony4.ARW
+
 
 // Pot plant
 ./hdrplus ../data dng g1.ARW g2.ARW g3.ARW g4.ARW g5.ARW g6.ARW g7.ARW
