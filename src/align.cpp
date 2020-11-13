@@ -67,6 +67,14 @@ Func align_layer(Func layer, Func prev_alignment, Point prev_min, Point prev_max
  */
 Func align(const Halide::Func imgs, Halide::Expr width, Halide::Expr height) {
 
+    // fpixel = single value float pixel that indicates brightness. 
+
+    // The only thing I know for sure from this algorithm is that it's not returning pixels, but some sort of buffer that contains the information needed for a merge (offsets)
+    // I pretty much think that somehow, this all calculates and returns a ton of data that the merge function can use to merge and connect input images to the main reference image
+    // The offsets are saved for every input image, broken up into tiles, and they essentially describe how far away the "same" pixel is in the reference image
+    // e.g. An fpixel at coordinate 0,0 in an input image has an x offset of 50 and a y offset of 70, this means the same fpixel lives at coords 50,70 in the reference image
+    // It's done at a "tile level" (the image divided into tiles) for performance
+
     Func alignment_3("layer_3_alignment");
     Func alignment("alignment");
 

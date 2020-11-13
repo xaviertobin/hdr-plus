@@ -21,6 +21,8 @@ Func merge_temporal(Halide::Func imgs, Expr width, Expr height, Expr frames, Fun
     Func output("merge_temporal_output");
 
     Var ix, iy, tx, ty, n;
+
+    // Rdom is like a var except it has a defined range!! So basically
     RDom r0(0, 16, 0, 16);                          // reduction over pixels in downsampled tile
     RDom r1(1, frames - 1);                 // reduction over alternate images
 
@@ -130,6 +132,9 @@ Func merge_spatial(Func input) {
                      + weight_10 * val_10
                      + weight_01 * val_01
                      + weight_11 * val_11);
+
+    // For output 0, 0, we get a 16 bit value made up of 4 weighted values.
+    // The weighting is determined by 
 
     ///////////////////////////////////////////////////////////////////////////
     // schedule

@@ -31,6 +31,9 @@ inline Halide::Expr tile_1(Halide::Expr e) { return e / T_SIZE_2; }
 /* 
  * idx_0 -- Returns the inner index into the upper (for y input) or left (for x input)
  * tile that an image index touches.
+ * 
+ *  IDX 0 CONVERTS THE COORDINATE OF A PIXEL IN A FULL X,Y 
+ * 
  */
 inline Halide::Expr idx_0(Halide::Expr e) { return e % T_SIZE_2  + T_SIZE_2; }
 

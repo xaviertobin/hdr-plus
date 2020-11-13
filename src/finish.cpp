@@ -821,10 +821,6 @@ Func finish(Func input, int width, int height, const BlackPoint bp, const WhiteP
 }
 
 Halide::Func touchup(Halide::Func input, Expr width, Expr height, Expr bp, Expr wp, const CompiletimeWhiteBalance2 &wb, const Expr cfa_pattern, Halide::Func ccm, const Expr c, const Expr g) {
-    int denoise_passes = 0;
-    float contrast_strength = 5.5f;
-    int black_level = 2000;
-    float sharpen_strength = 9.f;
 
     Func bayer_shifted = shift_bayer_to_rggb(input, cfa_pattern);
     
